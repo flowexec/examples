@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+executables:
+  - verb: validate
+    description: Generates, formats, and checks that the example files are up to date.
+    exec:
+      dir: //
+      cmd: |
+        set -e
+
+        echo "Building flow files examples..."
+        go run cmd/builder/*.go
+
+        if command -v yamlfmt &> /dev/null; then
+          echo "Formatting generated flow files..."
+          yamlfmt .
+        else
+          echo "yamlfmt not found, skipping formatting"
+        fi
+
+        echo "Checking for uncommitted generated files..."
+        if [ -n "$(git status --porcelain)" ]; then
+          echo "❌ Generated files have not been commited!"
+          echo ""
+          echo "Uncommitted changes:"
+          git status --porcelain
+          exit 1
+        else
+          echo "✅ All generated files are up to date"
+        fi
