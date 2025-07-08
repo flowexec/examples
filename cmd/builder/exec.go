@@ -199,7 +199,7 @@ func ExecWithParams(opts ...Option) *executable.Executable {
 		"available in the environment variable specified by `envKey`."
 	params := executable.ParameterList{
 		{EnvKey: "PARAM1", Text: "value1"},
-		{EnvKey: "PARAM2", SecretRef: "flow-example-secret"},
+		{EnvKey: "PARAM2", SecretRef: "demo/message"},
 		{EnvKey: "PARAM3", Prompt: "Enter a value"},
 	}
 	var paramCmds []string

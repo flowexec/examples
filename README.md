@@ -2,8 +2,6 @@
 
 <br>
 
-# flow file examples
-
 This repository contains example flow files demonstrating various executable types and workflows.
 
 ### Generated Files
