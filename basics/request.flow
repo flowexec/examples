@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: request
+description: |
+  Request executables send HTTP requests without leaving flow. This file
+  demonstrates the core options available on request executables.
+tags:
+  - basics
+  - request
+executables:
+  - verb: send
+    name: get
+    description: |
+      The `url` field is required. `method` defaults to GET. Use `headers` to
+      set arbitrary request headers.
+    request:
+      url: https://httpbin.org/get
+      method: GET
+      headers:
+        User-Agent: flow-examples
+
+  - verb: send
+    name: post
+    description: |
+      Set `method` to POST and provide a `body` string. The body is sent as-is,
+      so include a Content-Type header when needed.
+    request:
+      url: https://httpbin.org/post
+      method: POST
+      headers:
+        Content-Type: application/json
+      body: '{"source": "flow-examples", "action": "demo"}'
+
+  - verb: send
+    name: with-transform
+    description: |
+      `transformResponse` is an Expr expression evaluated against the response.
+      Available fields: `body` (raw string), `code` (int), `status` (string), `headers` (map).
+      Use `fromJSON(body)` to parse JSON responses before accessing fields.
+    request:
+      url: https://httpbin.org/get
+      logResponse: true
+      transformResponse: '"status: " + string(code) + " | url: " + fromJSON(body)["url"]'
+
+  - verb: send
+    name: with-validation
+    description: |
+      `validStatusCodes` fails the executable if the response status is not in
+      the list. Useful for asserting API contracts in automation pipelines.
+    request:
+      url: https://httpbin.org/status/200
+      validStatusCodes:
+        - 200
+
+  - verb: send
+    name: with-timeout
+    description: |
+      `timeout` limits how long flow waits for a response. The request is
+      cancelled and the executable fails if the timeout is exceeded.
+    request:
+      url: https://httpbin.org/delay/10
+      timeout: 5s
+
+  - verb: send
+    name: with-rich-transform
+    description: |
+      `transformResponse` is a full Expr expression — not just field access.
+      Use `let` bindings, `fromJSON()`, `has()`, conditionals, and string
+      operations to shape the output into exactly what you want to see.
+    request:
+      url: https://httpbin.org/get
+      logResponse: true
+      transformResponse: |
+        let data = fromJSON(body);
+        let ip = data["origin"] != nil ? string(data["origin"]) : "unknown";
+        "IP:  " + ip + "\n" +
+        "URL: " + string(data["url"])
+
+  - verb: send
+    name: with-response-file
+    description: |
+      `responseFile` saves the raw or transformed response to disk.
+      `saveAs: indented-json` pretty-prints the body — useful for caching
+      API responses locally or inspecting payloads during development.
+    request:
+      url: https://api.github.com/repos/flowexec/flow/releases/latest
+      headers:
+        Accept: application/vnd.github+json
+      transformResponse: |
+        let r = fromJSON(body);
+        "tag:       " + string(r["tag_name"]) + "\n" +
+        "name:      " + string(r["name"]) + "\n" +
+        "published: " + string(r["published_at"])
+      responseFile:
+        filename: .data/latest-release.json
+        saveAs: indented-json

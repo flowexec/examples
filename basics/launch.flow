@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: launch
+description: |
+  Launch executables open URIs or applications without shell scripting. This
+  file demonstrates the core options available on launch executables.
+tags:
+  - basics
+  - launch
+executables:
+  - verb: open
+    name: url
+    description: Open a URL in the system default browser.
+    launch:
+      uri: https://flowexec.io
+
+  - verb: open
+    name: path
+    description: |
+      Open a file path with the system default handler. `$FLOW_WORKSPACE_PATH`
+      is a built-in variable pointing to the workspace root directory.
+    launch:
+      uri: $FLOW_WORKSPACE_PATH
+      wait: true
+
+  - verb: open
+    name: app
+    description: |
+      Launch a macOS application by name using the `app` field. The `uri` is
+      passed as an argument to the app when provided.
+    launch:
+      app: System Preferences
+      uri: ""

@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: go
+description: |
+  Linting and static analysis for a Go project. Runs all checks concurrently
+  for fast feedback. Requires golangci-lint and govulncheck to be installed.
+tags:
+  - go
+  - lint
+executables:
+  - verb: lint
+    description: Run all linters in parallel (vet, format, static analysis, security).
+    parallel:
+      failFast: false
+      execs:
+        - ref: lint flow-examples/go:vet
+        - ref: lint flow-examples/go:format
+        - ref: lint flow-examples/go:static
+        - ref: lint flow-examples/go:security
+
+  - verb: lint
+    name: vet
+    description: Run go vet to catch suspicious constructs.
+    exec:
+      dir: //
+      cmd: |
+        go vet ./...
+        echo "go vet passed"
+
+  - verb: lint
+    name: format
+    description: Fail if any Go files are not gofmt-formatted.
+    exec:
+      dir: //
+      cmd: |
+        unformatted=$(gofmt -l .)
+        if [ -n "$unformatted" ]; then
+          echo "Files need formatting:"
+          echo "$unformatted"
+          echo "Run 'gofmt -w .' to fix"
+          exit 1
+        fi
+        echo "All files are formatted"
+
+  - verb: lint
+    name: static
+    description: Run golangci-lint for comprehensive static analysis.
+    exec:
+      dir: //
+      cmd: golangci-lint run ./...
+
+  - verb: lint
+    name: security
+    description: Scan for known vulnerabilities with govulncheck.
+    exec:
+      dir: //
+      cmd: govulncheck ./...

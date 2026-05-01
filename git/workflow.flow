@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: git
+description: |
+  Common git workflow helpers for day-to-day development. Covers committing
+  and pushing, syncing with the base branch, cleaning up merged branches,
+  and getting a quick status overview.
+tags:
+  - git
+executables:
+  - verb: push
+    name: branch
+    description: |
+      Stage all changes, commit with a prompted message, and push the current
+      branch to origin. A clean way to replace scattered git commands.
+    exec:
+      params:
+        - envKey: COMMIT_MSG
+          prompt: Commit message
+      cmd: |
+        git add -A
+        git commit -m "${COMMIT_MSG}"
+        git push origin HEAD
+        echo "Pushed to $(git rev-parse --abbrev-ref HEAD)"
+
+  - verb: fetch
+    aliases: [sync, rebase]
+    description: |
+      Fetch and rebase the current branch onto the base branch. Keeps your
+      branch up to date without creating a merge commit.
+    exec:
+      params:
+        - envKey: BASE_BRANCH
+          text: main
+      cmd: |
+        git fetch origin "${BASE_BRANCH}"
+        git rebase "origin/${BASE_BRANCH}"
+        echo "Synced with ${BASE_BRANCH}"
+
+  - verb: clean
+    name: branches
+    description: |
+      Delete all local branches that have been merged into main. Runs
+      `git fetch --prune` first to remove stale remote-tracking refs.
+    exec:
+      cmd: |
+        git fetch --prune
+        merged=$(git branch --merged main | grep -v '^\*\|main')
+        if [ -z "$merged" ]; then
+          echo "No merged branches to clean up"
+        else
+          echo "Deleting merged branches:"
+          echo "$merged"
+          echo "$merged" | xargs git branch -d
+          echo "Done"
+        fi
+
+  - verb: get
+    name: status
+    description: Show a compact working-tree status and the last 10 commits.
+    exec:
+      logMode: text
+      cmd: |
+        echo "=== Working tree ==="
+        git status --short
+        echo ""
+        echo "=== Recent commits ==="
+        git log --oneline -10

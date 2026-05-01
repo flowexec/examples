@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: scripts
+description: |
+  Flow can automatically generate executables from annotated shell scripts using
+  the `fromFile` field. Add `# f:` comment directives to any existing script and
+  flow imports it at sync time — no rewriting required.
+
+  This is a powerful migration path: teams can wrap existing Bash scripts,
+  deploy pipelines, or CI helpers in flow immediately and refine them over time.
+
+  See `assets/scripts/annotated-deploy.sh` for the comment syntax.
+tags:
+  - basics
+  - imports
+imports:
+  - ../assets/scripts/annotated-deploy.sh
+  - ../assets/scripts/annotated-health.sh
+executables:
+  - verb: run
+    name: syntax-reference
+    description: |
+      The `# f:` comment format supports these fields on a single line or
+      spread across multiple comment lines above the command block:
+
+        f:name        — executable name
+        f:verb        — action verb (run, deploy, check, build, …)
+        f:description — plain-text or quoted description
+        f:tags        — pipe-separated list  (f:tags=ci|prod)
+        f:timeout     — duration string      (f:timeout=10m)
+        f:visibility  — public/private/internal/hidden
+        f:params      — pipe-separated specs: type:ref:ENV_KEY
+                          types: text, secretRef, prompt, envFile
+        f:args        — pipe-separated specs: pos:N:ENV_KEY or flag:name:ENV_KEY
+
+      Multi-line descriptions use block markers:
+        # <f|description>
+        # Line one of the description.
+        # Line two.
+        # <f|description>
+    exec:
+      logMode: text
+      cmd: |
+        echo "This executable is here for documentation only."
+        echo "Each .sh file in fromFile generates exactly one executable."
+        echo ""
+        echo "Run these to see the imported executables in action:"
+        echo "  flow deploy scripts:app"
+        echo "  flow check scripts:service <url>"

@@ -1,30 +1,47 @@
-<p align="center"><a href="https://flowexec.io"><img src="https://flowexec.io/_media/logo.png" alt="flow" width="200"/></a></p>
+<p align="center"><a href="https://flowexec.io"><img src="https://flowexec.io/icon.png" alt="flow" width="200"/></a></p>
 
 <br>
 
-This repository contains example flow files demonstrating various executable types and workflows.
+A collection of real-world flow automation examples showing how developers use
+[flow](https://flowexec.io) to automate their daily workflows. Intended as a
+living reference and starting point for your own workspace.
 
-### Generated Files
+## Getting Started
 
-- **`*.flow.yaml`** - Flow file examples demonstrating different executable types
-- **`assets/`** - Supporting files (scripts, templates, data files) referenced by the examples
+```sh
+# Register this repo as a flow workspace
+flow workspace add flow-examples . --set
 
-### Examples Include
+# Browse all available executables
+flow browse
+```
 
-- **Exec Examples** - Running shell commands and scripts
-- **Parallel Examples** - Executing multiple tasks concurrently
-- **Serial Examples** - Sequential task execution
-- **Request Examples** - HTTP requests and API interactions
-- **Render Examples** - Template rendering with data
-- **Launch Examples** - Launching processes
-- **Executable Template Example** - Define flowfile templates for reusable workflows patterns
+## Structure
 
-## Generating Examples
+| Directory | What it shows |
+|---|---|
+| [`basics/`](basics/) | Core feature reference — one file per executable type |
+| [`go-project/`](go-project/) | Full developer lifecycle (build, test, lint, release) — same pattern applies to any ecosystem (Node, Rust, Python…) |
+| [`git/`](git/) | Git workflow helpers (commit, fetch/rebase, branch cleanup) |
+| [`api/`](api/) | HTTP automation — GitHub REST API, webhook dispatch |
+| [`docker/`](docker/) | Container workflows (build, run, push, clean) |
+| [`kubernetes/`](kubernetes/) | kubectl automation (context, apply, pods, logs, shell) + Helm shared-library pattern (reusable installer called by app deployers) |
+| [`setup/`](setup/) | Project onboarding (prereq checks, tool install, env config) |
+| [`assets/`](assets/) | Supporting scripts and templates referenced by examples |
 
-The examples are generated using the builder tool in `cmd/builder/`. To regenerate all examples:
+## Template
 
-```bash
-go run cmd/builder/*.go
-# or run via flow with
+`exec-template.flow.tmpl` is an executable template — run it to scaffold a
+starter flow file for a new project:
+
+```sh
+flow template generate NAME exec-template.flow.tmpl
+```
+
+## Validation
+
+All `.flow` files in this repo are schema-validated in CI:
+
+```sh
 flow validate
 ```

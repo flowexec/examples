@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: parallel
+description: |
+  Parallel executables run multiple tasks concurrently. This file demonstrates
+  the core options available on parallel executables.
+tags:
+  - basics
+  - parallel
+executables:
+  - verb: start
+    name: tasks
+    description: |
+      The `execs` list defines the concurrent tasks. Each task can be a `ref`
+      to another executable, an inline `cmd`, or both. All tasks start at once.
+    parallel:
+      execs:
+        - ref: run exec:simple
+        - ref: run exec:with-args
+          args:
+            - Hello
+            - name=flow
+        - cmd: echo 'inline concurrent task'
+
+  - verb: start
+    name: with-limit
+    description: |
+      `maxThreads` caps how many tasks run at the same time. Useful when tasks
+      compete for shared resources (ports, file locks, rate limits).
+    parallel:
+      maxThreads: 2
+      execs:
+        - cmd: echo 'task 1'; sleep 1; echo 'task 1 done'
+        - cmd: echo 'task 2'; sleep 1; echo 'task 2 done'
+        - cmd: echo 'task 3'; sleep 1; echo 'task 3 done'
+        - cmd: echo 'task 4'; sleep 1; echo 'task 4 done'
+
+  - verb: start
+    name: with-failfast
+    description: |
+      When `failFast` is true, the first task to fail cancels all remaining
+      in-flight tasks. Set to false to let all tasks run regardless.
+    parallel:
+      failFast: true
+      execs:
+        - ref: run exec:simple
+        - ref: run exec:with-timeout
+        - ref: run exec:simple

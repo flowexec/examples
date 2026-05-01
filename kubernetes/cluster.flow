@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: k8s
+description: |
+  Day-to-day Kubernetes cluster operations via kubectl. Covers context
+  switching, applying manifests, inspecting pods, streaming logs, and
+  opening an interactive shell inside a running container.
+tags:
+  - k8s
+executables:
+  - verb: set
+    name: context
+    description: Switch the active kubectl context and print cluster info.
+    exec:
+      args:
+        - envKey: CTX
+          pos: 1
+      cmd: |
+        kubectl config use-context "${CTX}"
+        kubectl cluster-info
+
+  - verb: apply
+    description: |
+      Apply all Kubernetes manifests in a directory. Pass the directory path as
+      the first positional argument (defaults to manifests/).
+    exec:
+      args:
+        - envKey: MANIFEST_DIR
+          default: manifests/
+          pos: 1
+          required: false
+      cmd: |
+        kubectl apply -f "${MANIFEST_DIR}"
+        echo "Applied manifests from ${MANIFEST_DIR}"
+
+  - verb: get
+    name: pods
+    description: |
+      List pods in a namespace sorted by creation time. Pass the namespace
+      as a flag: `flow get pods --namespace my-ns`
+    exec:
+      args:
+        - envKey: NS
+          default: default
+          flag: namespace
+      cmd: kubectl get pods -n "${NS}" --sort-by=.metadata.creationTimestamp
+
+  - verb: get
+    name: logs
+    description: |
+      Stream logs from a pod. Pass the pod name as the first positional arg
+      and optionally the namespace via the --namespace flag.
+    exec:
+      args:
+        - envKey: POD
+          pos: 1
+        - envKey: NS
+          default: default
+          flag: namespace
+      cmd: kubectl logs -f "${POD}" -n "${NS}"
+
+  - verb: debug
+    name: shell
+    description: |
+      Open an interactive shell inside a running container. Specify the pod
+      name, namespace (--namespace), and container name (--container).
+    exec:
+      args:
+        - envKey: POD
+          pos: 1
+        - envKey: NS
+          default: default
+          flag: namespace
+        - envKey: CONTAINER
+          default: app
+          flag: container
+      cmd: kubectl exec -it "${POD}" -n "${NS}" -c "${CONTAINER}" -- sh

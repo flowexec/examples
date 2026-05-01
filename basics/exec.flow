@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: exec
+description: |
+  Exec executables run shell commands or script files. This file demonstrates
+  the core options available on exec executables.
+tags:
+  - basics
+  - exec
+executables:
+  - verb: run
+    name: simple
+    description: Run a single shell command.
+    exec:
+      cmd: echo 'hello from flow'
+
+  - verb: run
+    name: script
+    description: |
+      Execute a script file. The `file` field accepts a path relative to the
+      workspace root.
+    exec:
+      dir: //
+      file: assets/scripts/simple-script.sh
+
+  - verb: run
+    name: with-args
+    description: |
+      Arguments are declared with `args`. Each arg maps to an env var via `envKey`.
+      Use `pos` for positional args (1-based) or `flag` for named flags.
+      A `default` is used when the arg is omitted; omitting a required arg fails the run.
+    exec:
+      args:
+        - envKey: GREETING
+          pos: 1
+        - envKey: NAME
+          default: world
+          flag: name
+      cmd: echo "${GREETING}, ${NAME}!"
+
+  - verb: run
+    name: with-params
+    description: |
+      Params inject environment variables from static text, vault secrets, or
+      interactive prompts. Unlike args, params are not passed on the command line.
+    exec:
+      params:
+        - envKey: STATIC_VAL
+          text: hello
+        - envKey: SECRET_VAL
+          secretRef: demo/message
+        - envKey: PROMPTED_VAL
+          prompt: Enter a value
+      cmd: |
+        echo "static:  ${STATIC_VAL}"
+        echo "secret:  ${SECRET_VAL}"
+        echo "prompt:  ${PROMPTED_VAL}"
+
+  - verb: run
+    name: with-timeout
+    description: |
+      The `timeout` field limits how long the executable may run. The process is
+      killed and the run fails if the limit is exceeded.
+    timeout: 3s
+    exec:
+      cmd: sleep 13
+
+  - verb: run
+    name: with-tmp-dir
+    description: |
+      Setting `dir: f:tmp` runs the executable inside a freshly created temporary
+      directory that is automatically removed after the run completes.
+    exec:
+      dir: f:tmp
+      cmd: |
+        echo "Working in: $(pwd)"
+        mkdir -p sub && touch sub/file.txt
+        ls -R
+
+  - verb: run
+    name: with-logmode
+    description: |
+      `logMode` controls how output is formatted. Options: logfmt (default),
+      text (raw), json, or hidden (suppress all output).
+    exec:
+      logMode: text
+      cmd: |
+        echo "line 1"
+        echo "line 2"
+        echo "line 3"
+
+  - verb: run
+    name: with-envfile
+    description: |
+      The `envFile` param type loads all variables from a `.env`-style file
+      into the executable's environment. Each line must be `KEY=VALUE` format.
+      Combine with other param types in the same `params` list.
+    exec:
+      dir: //
+      params:
+        - envFile: ../assets/scripts/.env.example
+      cmd: |
+        echo "APP_NAME: ${APP_NAME}"
+        echo "PORT:     ${PORT}"
+        echo "LOG_LEVEL: ${LOG_LEVEL}"
+
+  - verb: run
+    name: with-input
+    description: Run a command that reads from stdin interactively.
+    exec:
+      cmd: |
+        echo "Enter your name:"
+        read name
+        echo "Hello, ${name}!"

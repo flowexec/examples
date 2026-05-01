@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: go
+description: |
+  Build automation for a Go project. Covers compiling binaries, code generation,
+  and dependency management. Adapt paths and commands to your own project.
+tags:
+  - go
+  - build
+executables:
+  - verb: build
+    description: Build the binary and run code generation in parallel.
+    parallel:
+      failFast: false
+      execs:
+        - ref: build flow-examples/go:binary
+        - ref: generate flow-examples/go:cli
+
+  - verb: build
+    name: binary
+    aliases:
+      - bin
+    description: |
+      Compile the Go binary. Pass an optional output directory as the first
+      positional argument (defaults to .bin).
+    exec:
+      dir: //
+      args:
+        - envKey: OUT_DIR
+          default: .bin
+          pos: 1
+          required: false
+      cmd: |
+        mkdir -p "${OUT_DIR}"
+        go build -o "${OUT_DIR}/app" ./...
+        echo "Binary built at ${OUT_DIR}/app"
+
+  - verb: generate
+    name: cli
+    description: Run go generate across all packages.
+    exec:
+      dir: //
+      cmd: |
+        go generate ./...
+        echo "Code generation complete"
+
+  - verb: update
+    name: deps
+    aliases:
+      - modules
+      - gomod
+    description: Update all Go module dependencies and tidy the module graph.
+    exec:
+      dir: //
+      cmd: |
+        go get -u ./...
+        go mod tidy
+        echo "Dependencies updated"

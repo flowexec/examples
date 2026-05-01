@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: render
+description: |
+  Render executables display Markdown templates in flow's TUI. Templates support
+  Go template syntax and can pull in data from YAML files and params.
+tags:
+  - basics
+  - render
+executables:
+  - verb: view
+    name: markdown
+    description: |
+      `templateFile` points to a Markdown template (Go template syntax).
+      `templateDataFile` merges a YAML data file into the template context.
+      `params` inject additional env vars that the template can reference via
+      the `env` function.
+    render:
+      dir: //
+      templateFile: assets/templates/template.md
+      templateDataFile: assets/templates/template-data.yaml
+      params:
+        - envKey: NAME
+          prompt: What is your name?
+        - envKey: GREETING
+          text: Hello

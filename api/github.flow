@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: github
+description: |
+  Interact with the GitHub REST API using flow's request executable. All
+  endpoints used here are public and require no authentication. Add a
+  secretRef for GITHUB_TOKEN when hitting authenticated endpoints.
+tags:
+  - api
+  - github
+executables:
+  - verb: get
+    name: repo
+    description: |
+      Fetch public metadata for any GitHub repository. Pass owner and repo
+      name as positional arguments: `flow get repo <owner> <repo>`
+    exec:
+      args:
+        - envKey: OWNER
+          pos: 1
+        - envKey: REPO
+          pos: 2
+      cmd: |
+        curl -sf "https://api.github.com/repos/${OWNER}/${REPO}" \
+          | jq '{
+              name,
+              description,
+              stars: .stargazers_count,
+              forks: .forks_count,
+              language,
+              open_issues: .open_issues_count,
+              updated_at
+            }'
+
+  - verb: get
+    name: releases
+    description: |
+      List the latest releases for the flow project using the request
+      executable type. `transformResponse` extracts the fields we care about.
+    request:
+      url: https://api.github.com/repos/flowexec/flow/releases
+      logResponse: true
+      headers:
+        Accept: application/vnd.github+json
+      transformResponse: 'join(map(fromJSON(body), string(#["tag_name"]) + " — " + string(#["name"]) + " (" + string(#["published_at"]) + ")"), "\n")'
+
+  - verb: check
+    name: rate-limit
+    description: |
+      Check the current GitHub API rate limit status. Useful for debugging
+      pipelines that make many API calls.
+    request:
+      url: https://api.github.com/rate_limit
+      headers:
+        Accept: application/vnd.github+json
+      logResponse: true
+      transformResponse: fromJSON(body)["rate"]
+
+  - verb: send
+    name: webhook
+    description: |
+      POST a JSON event payload to a webhook endpoint with status validation.
+      A common pattern for triggering CI, chat notifications, or custom
+      integrations from any serial pipeline step. Combine with `retries` in a
+      serial ref to automatically retry on transient failures.
+    request:
+      url: https://httpbin.org/post
+      method: POST
+      headers:
+        Content-Type: application/json
+        X-Source: flow-examples
+      body: '{"event": "deploy", "status": "success", "version": "1.0.0"}'
+      validStatusCodes:
+        - 200
+      transformResponse: fromJSON(body)["json"]

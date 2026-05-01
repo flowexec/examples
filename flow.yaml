@@ -1,1 +1,13 @@
-displayName: flow-examples
+displayName: flow examples
+descriptionFile: README.md
+tags:
+  - basics
+  - go
+  - node
+  - git
+  - docker
+  - k8s
+  - api
+  - setup
+verbAliases:
+  open: [show, launch]

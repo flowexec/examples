@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: db
+description: |
+  Database lifecycle management for a local SQLite database. All executables
+  target the same `db` resource name with different verbs — showing how flow
+  organizes the full lifecycle of a single resource: migrate, check, inspect,
+  backup, rollback, and clean.
+tags:
+  - setup
+  - database
+
+executables:
+  - verb: migrate
+    name: db
+    description: Apply all pending SQL migration files from the migrations/ directory.
+    exec:
+      params:
+        - envKey: DB_PATH
+          text: .data/app.db
+      cmd: |
+        mkdir -p "$(dirname "${DB_PATH}")"
+        for f in $(find migrations -name "*.sql" 2>/dev/null | sort); do
+          echo "Applying ${f}..."
+          sqlite3 "${DB_PATH}" < "${f}"
+        done
+        echo "✓ Migrations applied to ${DB_PATH}"
+
+  - verb: check
+    name: db
+    description: Show the current schema version and list all tables.
+    exec:
+      params:
+        - envKey: DB_PATH
+          text: .data/app.db
+      cmd: |
+        if [ ! -f "${DB_PATH}" ]; then
+          echo "Database not found at ${DB_PATH} — run: flow migrate db"
+          exit 1
+        fi
+        echo "=== Tables in ${DB_PATH} ==="
+        sqlite3 "${DB_PATH}" ".tables"
+        echo ""
+        echo "=== Schema ==="
+        sqlite3 "${DB_PATH}" ".schema"
+
+  - verb: inspect
+    name: db
+    description: Open an interactive SQLite shell for the local database.
+    exec:
+      logMode: text
+      params:
+        - envKey: DB_PATH
+          text: .data/app.db
+      cmd: |
+        if [ ! -f "${DB_PATH}" ]; then
+          echo "Database not found at ${DB_PATH} — run: flow migrate db"
+          exit 1
+        fi
+        echo "Opening ${DB_PATH} (type .quit to exit)"
+        sqlite3 "${DB_PATH}"
+
+  - verb: backup
+    name: db
+    description: Copy the database to a timestamped file in .data/backups/.
+    exec:
+      params:
+        - envKey: DB_PATH
+          text: .data/app.db
+      cmd: |
+        if [ ! -f "${DB_PATH}" ]; then
+          echo "Database not found at ${DB_PATH}"
+          exit 1
+        fi
+        BACKUP=".data/backups/app-$(date +%Y%m%d-%H%M%S).db"
+        mkdir -p .data/backups
+        cp "${DB_PATH}" "${BACKUP}"
+        echo "✓ Backed up to ${BACKUP}"
+        echo ""
+        echo "Recent backups:"
+        ls -lh .data/backups/ | tail -5
+
+  - verb: rollback
+    name: db
+    description: |
+      Drop all tables and re-apply migrations from scratch. Useful during
+      development — destructive in production.
+    params:
+      - envKey: DB_PATH
+        text: .data/app.db
+    serial:
+      failFast: true
+      execs:
+        - cmd: |
+            echo "=== Dropping all tables ==="
+            sqlite3 "${DB_PATH}" "SELECT 'DROP TABLE IF EXISTS ' || name || ';' FROM sqlite_master WHERE type='table';" \
+              | sqlite3 "${DB_PATH}"
+            echo "✓ Tables dropped"
+          reviewRequired: true
+        - ref: "migrate flow-examples/db:db"
+
+  - verb: clean
+    name: db
+    description: Delete the local database file entirely.
+    exec:
+      params:
+        - envKey: DB_PATH
+          text: .data/app.db
+      cmd: |
+        if [ ! -f "${DB_PATH}" ]; then
+          echo "Nothing to clean"
+          exit 0
+        fi
+        rm -f "${DB_PATH}" "${DB_PATH}-shm" "${DB_PATH}-wal"
+        echo "✓ Deleted ${DB_PATH}"

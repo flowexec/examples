@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: setup
+description: |
+  Project onboarding automation. Verify required tools are installed, install
+  common development dependencies, and scaffold local environment configuration.
+  Adapt the tool list and env vars to your own project.
+tags:
+  - setup
+executables:
+  - verb: check
+    description: |
+      Verify that all required development tools are available. Continues even
+      if individual checks fail so you see the full picture at once.
+    serial:
+      failFast: false
+      execs:
+        - cmd: |
+            command -v go > /dev/null 2>&1 \
+              && echo "✅ go $(go version | awk '{print $3}')" \
+              || echo "❌ go not found — install from https://go.dev/dl"
+        - cmd: |
+            command -v git > /dev/null 2>&1 \
+              && echo "✅ git $(git --version | awk '{print $3}')" \
+              || echo "❌ git not found"
+        - cmd: |
+            command -v docker > /dev/null 2>&1 \
+              && echo "✅ docker $(docker --version | awk '{print $3}' | tr -d ',')" \
+              || echo "❌ docker not found — install Docker Desktop"
+        - cmd: |
+            command -v node > /dev/null 2>&1 \
+              && echo "✅ node $(node --version)" \
+              || echo "❌ node not found — install from https://nodejs.org"
+        - cmd: |
+            command -v kubectl > /dev/null 2>&1 \
+              && echo "✅ kubectl $(kubectl version --client --short 2>/dev/null | awk '{print $3}')" \
+              || echo "⚠️  kubectl not found (optional)"
+
+  - verb: install
+    name: go-tools
+    description: Install common Go development tools into GOPATH.
+    exec:
+      cmd: |
+        echo "Installing Go tools..."
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+        echo "✅ govulncheck and golangci-lint installed"
+
+  - verb: configure
+    name: env
+    description: |
+      Scaffold a local .env file from the .env.example template and populate
+      required values via interactive prompts.
+    exec:
+      params:
+        - envKey: APP_NAME
+          prompt: Application name
+        - envKey: DB_URL
+          prompt: "Database URL (e.g. postgres://localhost:5432/mydb)"
+        - envKey: PORT
+          prompt: App port
+          text: "8080"
+      cmd: |
+        if [ ! -f .env.example ]; then
+          printf 'APP_NAME=\nDATABASE_URL=\nPORT=8080\n' > .env.example
+          echo "Created .env.example"
+        fi
+
+        cp .env.example .env
+        echo "APP_NAME=${APP_NAME}" >> .env
+        echo "DATABASE_URL=${DB_URL}" >> .env
+        echo "PORT=${PORT}" >> .env
+        echo "✅ .env configured — review and adjust before running"

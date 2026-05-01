@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: k8s
+description: |
+  Helm shared-library pattern. Generic `install helm-chart` and `verify
+  deployment` utilities are called by app-specific deployers with different
+  positional args — add a new app by copying the pattern, not the logic.
+tags:
+  - k8s
+  - helm
+
+executables:
+  # Shared utilities
+
+  - verb: install
+    name: helm-chart
+    description: |
+      Generic Helm chart installer. Accepts namespace, repo name, repo URL,
+      chart name, and release name as positional args (values file optional).
+    exec:
+      args:
+        - flag: ns
+          envKey: NAMESPACE
+          required: true
+        - flag: repo
+          envKey: REPO_NAME
+          required: true
+        - flag: url
+          envKey: REPO_URL
+          required: true
+        - flag: chart
+          envKey: CHART_NAME
+          required: true
+        - flag: release
+          envKey: RELEASE_NAME
+          required: true
+        - pos: 1
+          envKey: VALUES_FILE
+          default: values.yaml
+      cmd: |
+        helm repo list 2>/dev/null | grep -q "^${REPO_NAME}" \
+          || helm repo add "${REPO_NAME}" "${REPO_URL}"
+        helm repo update "${REPO_NAME}"
+
+        VALUES_ARG=""
+        [ -f "${VALUES_FILE}" ] && VALUES_ARG="-f ${VALUES_FILE}"
+
+        helm upgrade --install "${RELEASE_NAME}" "${REPO_NAME}/${CHART_NAME}" \
+          --namespace "${NAMESPACE}" --create-namespace --wait ${VALUES_ARG}
+        echo "✓ ${RELEASE_NAME} deployed to ${NAMESPACE}"
+
+  - verb: verify
+    name: deployment
+    description: Post-deploy check — pods and services for the given namespace/app.
+    exec:
+      args:
+        - pos: 1
+          envKey: NAMESPACE
+          required: true
+        - pos: 2
+          envKey: APP_NAME
+          required: true
+      cmd: |
+        echo "=== Pods ==="
+        kubectl get pods -n "${NAMESPACE}" -l "app.kubernetes.io/instance=${APP_NAME}"
+        echo ""
+        echo "=== Services ==="
+        kubectl get svc -n "${NAMESPACE}"
+
+  # App deployers — same pipeline shape, different args
+
+  - verb: deploy
+    name: monitoring
+    description: Deploy kube-prometheus-stack to the monitoring namespace.
+    serial:
+      failFast: true
+      execs:
+        - ref: install k8s:helm-chart
+          args:
+            - "--ns=monitoring"
+            - "--repo=prometheus-community"
+            - "--url=https://prometheus-community.github.io/helm-charts"
+            - "--chart=kube-prometheus-stack"
+            - "--release=prometheus"
+        - ref: verify k8s:deployment
+          args: ["monitoring", "prometheus"]
+
+  - verb: deploy
+    name: ingress
+    description: Deploy nginx ingress controller to the ingress-nginx namespace.
+    serial:
+      failFast: true
+      execs:
+        - ref: install k8s:helm-chart
+          args:
+            - "--ns=ingress-nginx"
+            - "--repo=ingress-nginx"
+            - "--url=https://kubernetes.github.io/ingress-nginx"
+            - "--chart=ingress-nginx"
+            - "--release=ingress-nginx"
+        - ref: verify k8s:deployment
+          args: ["ingress-nginx", "ingress-nginx"]

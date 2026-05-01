@@ -1,16 +1,28 @@
 form:
-  - key: Color
-    prompt: What is your favorite color?
-    default: blue
-artifacts:
-  - srcName: message.txt
-    dstName: message.txt
+  - key: ProjectName
+    prompt: What is your project name?
+  - key: Port
+    prompt: Default port for your app?
+    default: "8080"
 template: |
-  visibility: private
-  namespace: examples
+  namespace: {{ lower(form["ProjectName"]) }}
   executables:
-    - verb: run
-      name: {{ form["Color"] }}-msg
-      description: Created from a template in {{ workspace }}
+    - verb: start
+      name: dev
+      description: Start {{ form["ProjectName"] }} in development mode.
       exec:
-        cmd: cat message.txt
+        params:
+          - envKey: PORT
+            text: '{{ form["Port"] }}'
+        cmd: |
+          echo "Starting {{ form["ProjectName"] }} on port ${PORT}..."
+          # Replace with your project's actual start command
+
+    - verb: check
+      name: env
+      description: Verify required environment variables are set.
+      exec:
+        cmd: |
+          echo "Checking environment for {{ form["ProjectName"] }}..."
+          [ -f .env ] && echo ".env found" || echo "Warning: .env not found"
+          env | grep -i "{{ lower(form["ProjectName"]) }}" | sort || true

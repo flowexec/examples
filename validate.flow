@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+executables:
+  - verb: validate
+    description: Schema-validate all *.flow files in the workspace.
+    exec:
+      dir: //
+      cmd: |
+        flow schema validate *.flow --strict

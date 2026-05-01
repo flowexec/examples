@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: go
+description: |
+  Release pipeline for a Go project. The main `release` executable runs the full
+  lint → test → build → tag pipeline. Also includes a local snapshot build for
+  testing the release config without publishing.
+tags:
+  - go
+  - release
+executables:
+  - verb: release
+    description: |
+      Full release pipeline: lint, test, build, then create and push a git tag.
+      Prompts for the version string before starting. Stops on the first failure.
+    serial:
+      failFast: true
+      execs:
+        - ref: "lint flow-examples/go:"
+        - ref: "test flow-examples/go:"
+        - ref: build flow-examples/go:binary
+        - cmd: |
+            git tag -a "v${VERSION}" -m "Release v${VERSION}"
+            git push origin "v${VERSION}"
+            echo "Tagged and pushed v${VERSION}"
+    params:
+      - envKey: VERSION
+        prompt: "Release version (e.g. 1.2.0)"
+
+  - verb: build
+    name: snapshot
+    description: |
+      Build a local snapshot release using goreleaser without publishing to
+      GitHub or any container registry. Artifacts are written to dist/.
+    exec:
+      dir: //
+      cmd: |
+        goreleaser build --snapshot --clean
+        echo "Snapshot artifacts in dist/"

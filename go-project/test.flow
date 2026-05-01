@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: go
+description: |
+  Test automation for a Go project. Runs unit and integration tests in parallel,
+  and generates HTML coverage reports. Adapt tags and paths to your own project.
+tags:
+  - go
+  - test
+executables:
+  - verb: test
+    description: Run unit and integration tests in parallel.
+    parallel:
+      failFast: false
+      maxThreads: 2
+      execs:
+        - ref: test flow-examples/go:unit
+        - ref: test flow-examples/go:integration
+
+  - verb: test
+    name: unit
+    description: Run unit tests with the race detector.
+    exec:
+      dir: //
+      cmd: |
+        go test -race -tags=unit -coverprofile=unit.out ./...
+        echo "Unit tests passed"
+
+  - verb: test
+    name: integration
+    description: Run integration tests with the race detector.
+    exec:
+      dir: //
+      cmd: |
+        go test -race -tags=integration ./...
+        echo "Integration tests passed"
+
+  - verb: transform
+    name: coverage
+    description: Run tests with coverage, generate an HTML report, and open it.
+    serial:
+      dir: //
+      execs:
+        - cmd: |
+            go test -coverprofile=coverage.out ./...
+            go tool cover -html=coverage.out -o coverage.html
+            echo "Coverage report written to coverage.html"
+        - ref: open flow-examples/go:coverage
+
+  - verb: open
+    name: coverage
+    visibility: internal
+    launch:
+      uri: coverage.html

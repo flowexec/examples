@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: serial
+description: |
+  Serial executables run a list of steps in order. Steps can reference other
+  executables, run inline commands, or both. This file demonstrates the core
+  options available on serial executables.
+tags:
+  - basics
+  - serial
+executables:
+  - verb: start
+    name: steps
+    description: |
+      The `execs` list defines the steps. Each step can be a `ref` to another
+      executable, an inline `cmd`, or both. Args can be forwarded to refs.
+    serial:
+      execs:
+        - ref: run exec:simple
+        - ref: run exec:with-args
+          args:
+            - Hello
+            - name=flow
+        - cmd: echo 'inline step — done'
+
+  - verb: start
+    name: with-retry
+    description: |
+      Individual steps can be retried on failure with the `retries` field.
+      Each retry re-runs only the failing step, not the entire serial.
+    serial:
+      execs:
+        - cmd: echo 'step 1 — always succeeds'
+        - cmd: |
+            echo 'step 2 — simulating a flaky command'
+            exit 1
+          retries: 2
+        - cmd: echo 'step 3 — only runs if step 2 eventually passes'
+
+  - verb: start
+    name: with-failfast
+    description: |
+      When `failFast` is true (the default), the serial stops immediately on
+      the first failing step. Set it to false to continue despite failures.
+    serial:
+      failFast: true
+      execs:
+        - ref: run exec:simple
+        - ref: run exec:with-timeout
+        - ref: run exec:simple
+
+  - verb: start
+    name: with-review
+    description: |
+      Setting `reviewRequired: true` on a step pauses the serial after that
+      step completes and prompts the user to approve before continuing.
+      Ideal for destructive operations like deploys or database migrations.
+    serial:
+      execs:
+        - cmd: |
+            echo "=== Pending changes ==="
+            echo "  ~ config.yaml  — updated 2 keys"
+            echo "  ~ schema.sql   — adds 1 column"
+          reviewRequired: true
+        - cmd: echo "Approved — applying changes"
+
+  - verb: start
+    name: with-condition
+    description: |
+      The `if` field on any step takes an Expr expression. The step is skipped
+      (not failed) when the expression evaluates to false. Available context:
+      `os`, `arch`, `env` (map), `store` (persisted data), and `ctx`.
+    serial:
+      failFast: false
+      execs:
+        - cmd: echo "Always runs"
+        - cmd: echo "Only on macOS"
+          if: os == "darwin"
+        - cmd: echo "Only when CI env var is set"
+          if: env["CI"] != ""
+        - cmd: echo "Always runs — done"

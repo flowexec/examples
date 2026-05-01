@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: docker
+description: |
+  Container workflow automation using Docker. Covers building images with
+  configurable tags, running containers locally, pushing to a registry,
+  and cleaning up unused resources.
+tags:
+  - docker
+executables:
+  - verb: build
+    description: |
+      Build a Docker image for the project. Pass an optional image tag as the
+      first positional argument (defaults to app:latest).
+    exec:
+      args:
+        - envKey: IMAGE_TAG
+          default: app:latest
+          pos: 1
+          required: false
+      cmd: |
+        docker build -t "${IMAGE_TAG}" .
+        echo "Built image: ${IMAGE_TAG}"
+
+  - verb: run
+    description: Run the application container and forward a configurable port.
+    exec:
+      params:
+        - envKey: IMAGE_TAG
+          text: app:latest
+        - envKey: PORT
+          text: "8089"
+      cmd: |
+        docker run --rm -p "${PORT}:${PORT}" "${IMAGE_TAG}"
+
+  - verb: push
+    aliases: [publish]
+    description: |
+      Build, tag, and push the image to a container registry. Prompts for the
+      registry URL and image tag before starting.
+    serial:
+      failFast: true
+      execs:
+        - ref: "build flow-examples/docker:"
+        - cmd: |
+            docker tag app:latest "${REGISTRY}/app:${TAG}"
+            docker push "${REGISTRY}/app:${TAG}"
+            echo "Pushed ${REGISTRY}/app:${TAG}"
+    params:
+      - envKey: REGISTRY
+        prompt: Registry URL (e.g. ghcr.io/myorg)
+      - envKey: TAG
+        prompt: Image tag (e.g. v1.0.0)
+
+  - verb: clean
+    aliases: [prune]
+    description: Remove stopped containers, dangling images, and unused build cache.
+    exec:
+      cmd: |
+        docker system prune -f
+        echo "Docker resources cleaned"
