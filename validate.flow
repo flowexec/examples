@@ -1,8 +1,29 @@
 # yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
 executables:
   - verb: validate
-    description: Schema-validate all *.flow files in the workspace.
+    description: |
+      Schema-validate every flow file, the workspace config, and the template.
+
+      The file list is built with `find` rather than a `*.flow` glob: the glob
+      only matches the workspace root, so subdirectories - which is where nearly
+      every example lives - went unchecked.
     exec:
       dir: //
       cmd: |
-        flow schema validate *.flow --strict
+        set -e
+
+        flowfiles=$(find . -name '*.flow' -not -path './.git/*' | sort)
+        count=$(echo "$flowfiles" | wc -l | tr -d ' ')
+        echo "validating ${count} flow file(s)..."
+        flow schema validate $flowfiles --strict
+
+        echo "validating workspace config..."
+        flow schema validate flow.yaml --strict
+
+        templates=$(find . -name '*.flow.tmpl' -not -path './.git/*' | sort)
+        if [ -n "$templates" ]; then
+          echo "validating template(s)..."
+          flow schema validate $templates --type template --strict
+        fi
+
+        echo "all files valid"

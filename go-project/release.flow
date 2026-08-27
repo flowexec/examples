@@ -22,9 +22,9 @@ executables:
             git tag -a "v${VERSION}" -m "Release v${VERSION}"
             git push origin "v${VERSION}"
             echo "Tagged and pushed v${VERSION}"
-    params:
-      - envKey: VERSION
-        prompt: "Release version (e.g. 1.2.0)"
+      params:
+        - envKey: VERSION
+          prompt: "Release version (e.g. 1.2.0)"
 
   - verb: build
     name: snapshot

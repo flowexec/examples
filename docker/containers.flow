@@ -45,11 +45,11 @@ executables:
             docker tag app:latest "${REGISTRY}/app:${TAG}"
             docker push "${REGISTRY}/app:${TAG}"
             echo "Pushed ${REGISTRY}/app:${TAG}"
-    params:
-      - envKey: REGISTRY
-        prompt: Registry URL (e.g. ghcr.io/myorg)
-      - envKey: TAG
-        prompt: Image tag (e.g. v1.0.0)
+      params:
+        - envKey: REGISTRY
+          prompt: Registry URL (e.g. ghcr.io/myorg)
+        - envKey: TAG
+          prompt: Image tag (e.g. v1.0.0)
 
   - verb: clean
     aliases: [prune]

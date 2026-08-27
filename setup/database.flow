@@ -84,11 +84,11 @@ executables:
     description: |
       Drop all tables and re-apply migrations from scratch. Useful during
       development — destructive in production.
-    params:
-      - envKey: DB_PATH
-        text: .data/app.db
     serial:
       failFast: true
+      params:
+        - envKey: DB_PATH
+          text: .data/app.db
       execs:
         - cmd: |
             echo "=== Dropping all tables ==="

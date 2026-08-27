@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: container
+description: |
+  Running executables inside a container image, using exec's `container` block.
+
+  This is different from the `docker` namespace: those examples drive the docker
+  CLI as the task itself. Here the container is where the task runs — flow starts
+  it, mounts the workspace, passes the resolved environment in, and cleans up.
+  Requires `docker` or `podman` on the PATH.
+tags:
+  - container
+  - docker
+executables:
+  - verb: build
+    name: pinned-toolchain
+    description: |
+      Run a command in a pinned toolchain image instead of installing it locally.
+      The workspace root is mounted at /workspace and used as the working
+      directory, so relative paths behave as they do on the host.
+    exec:
+      dir: //
+      cmd: go version && go build ./... 2>/dev/null || echo "no go module here - the point is the toolchain"
+      container:
+        image: golang:1.26-alpine
+
+  - verb: run
+    name: pinned-node
+    description: |
+      The same pattern with a different ecosystem. Nothing about the executable
+      changes except the image, which is what makes this useful for a repo whose
+      contributors do not all have the same tools installed.
+    exec:
+      cmd: node --version && echo "ran in the image, not on your machine"
+      container:
+        image: node:22-alpine
+
+  - verb: run
+    name: with-env
+    description: |
+      Parameters and arguments reach the container as environment variables, the
+      same as a host run. flow passes them through an env file rather than the
+      command line, so secrets stay out of `docker inspect` and the process list.
+      FLOW_IN_CONTAINER is set so a script can tell where it is running.
+    exec:
+      params:
+        - envKey: GREETING
+          text: hello from the host
+      args:
+        - envKey: TARGET
+          default: container
+          pos: 1
+          required: false
+      cmd: |
+        echo "${GREETING}, ${TARGET}"
+        echo "in container: ${FLOW_IN_CONTAINER}"
+      container:
+        image: alpine:3
+
+  - verb: run
+    name: with-volumes
+    description: |
+      Extra mounts beyond the workspace. A host path may be absolute, `~/`-prefixed,
+      or `//`-prefixed for workspace-relative. The container side must be absolute.
+      Append `:ro` to mount read-only.
+    exec:
+      cmd: ls /assets && echo "---" && cat /assets/scripts/hello.sh
+      container:
+        image: alpine:3
+        volumes:
+          - "//assets:/assets:ro"
+
+  - verb: run
+    name: custom-workdir
+    description: |
+      By default flow mounts the workspace at /workspace and runs there. Override
+      either side when an image expects a particular layout.
+    exec:
+      dir: //
+      cmd: pwd && ls
+      container:
+        image: alpine:3
+        mountWorkspace: /src
+        workdir: /src/basics
+
+  - verb: run
+    name: custom-entrypoint
+    description: |
+      flow overrides the image entrypoint with `sh` by default, so `cmd` behaves
+      as a shell command on any image. Name a different one when the command needs
+      it - here bash, for a bashism that would fail under sh. Setting `entrypoint`
+      to an empty string uses the image's own ENTRYPOINT instead.
+    exec:
+      cmd: |
+        shopt -q login_shell; echo "bash-only builtin ran fine"
+        echo "shell: ${BASH_VERSION:-not bash}"
+      container:
+        image: debian:bookworm-slim
+        entrypoint: bash
+
+  - verb: test
+    name: isolated
+    description: |
+      A practical use: run the test suite against a pinned runtime so a local
+      version drift cannot change the result. Combine with `serial` to run
+      several such steps in order.
+    serial:
+      execs:
+        - ref: build container:pinned-toolchain
+        - ref: run container:pinned-node
