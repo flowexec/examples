@@ -20,7 +20,6 @@ executables:
       is a built-in variable pointing to the workspace root directory.
     launch:
       uri: $FLOW_WORKSPACE_PATH
-      wait: true
 
   - verb: open
     name: app

@@ -24,7 +24,9 @@ flow browse
 | [`go-project/`](go-project/) | Full developer lifecycle (build, test, lint, release) — same pattern applies to any ecosystem (Node, Rust, Python…) |
 | [`git/`](git/) | Git workflow helpers (commit, fetch/rebase, branch cleanup) |
 | [`api/`](api/) | HTTP automation — GitHub REST API, webhook dispatch |
-| [`docker/`](docker/) | Container workflows (build, run, push, clean) |
+| [`docker/`](docker/) | Driving the docker CLI as the task — build, run, push, clean |
+| [`container/`](container/) | Running executables *inside* an image with exec's `container` block — pinned toolchains, volumes, entrypoints |
+| [`python/`](python/) | Python executables — inline `interpreter: python`, `.py` files, params via `os.environ`, mixed shell/Python steps |
 | [`kubernetes/`](kubernetes/) | kubectl automation (context, apply, pods, logs, shell) + Helm shared-library pattern (reusable installer called by app deployers) |
 | [`setup/`](setup/) | Project onboarding (prereq checks, tool install, env config) |
 | [`assets/`](assets/) | Supporting scripts and templates referenced by examples |
@@ -40,8 +42,12 @@ flow template generate NAME exec-template.flow.tmpl
 
 ## Validation
 
-All `.flow` files in this repo are schema-validated in CI:
+Every `.flow` file, the workspace config, and the template are schema-validated
+in CI against flow's `main` build:
 
 ```sh
 flow validate
 ```
+
+Examples using recently-added fields are validated against `main` rather than the
+latest release, so a feature can be demonstrated here as soon as it lands.

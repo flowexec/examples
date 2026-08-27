@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: python
+description: |
+  Running Python through flow. Set `interpreter: python` to run `cmd` as a
+  script, or point `file` at a `.py` and the extension implies it.
+
+  Parameters, arguments, and secrets arrive as environment variables, so read
+  them from `os.environ` exactly as a shell command would read `$VAR`.
+tags:
+  - python
+  - basics
+executables:
+  - verb: run
+    name: inline
+    description: |
+      `interpreter: python` runs `cmd` as Python instead of a shell command. Use
+      a block scalar for anything multi-line - indentation is preserved, so
+      normal Python formatting works.
+    exec:
+      interpreter: python
+      cmd: |
+        import sys
+
+        print("running", sys.version.split()[0])
+        print("interpreter:", sys.executable)
+
+  - verb: run
+    name: with-params
+    description: |
+      Params and args reach Python through the environment, the same as a shell
+      command. Nothing python-specific is needed to read them.
+    exec:
+      interpreter: python
+      params:
+        - envKey: GREETING
+          text: hello
+      args:
+        - envKey: NAME
+          default: world
+          pos: 1
+          required: false
+      cmd: |
+        import os
+
+        print(f"{os.environ['GREETING']}, {os.environ['NAME']}!")
+
+  - verb: run
+    name: script
+    description: |
+      A `.py` file needs no `interpreter` at all - the extension implies it.
+      Setting `interpreter` explicitly overrides whatever the extension says.
+    exec:
+      dir: //
+      file: assets/scripts/report.py
+
+  - verb: run
+    name: traceback
+    description: |
+      flow runs `cmd` from a temporary file rather than `python -c`, so a
+      traceback reports the real line number. Run this to see it - the error is
+      on line 4 and says so.
+    exec:
+      interpreter: python
+      cmd: |
+        import json
+
+        payload = '{"not": "valid", }'
+        json.loads(payload)
+
+  - verb: run
+    name: mixed-steps
+    description: |
+      Steps inside `serial` and `parallel` take their own `interpreter`, so one
+      workflow can mix shell and Python without splitting into separate
+      executables. A step that omits it runs under the shell as before.
+    serial:
+      execs:
+        - name: collect (shell)
+          cmd: |
+            echo '{"passed": 3, "failed": 0}' > "${FLOW_TMP_DIRECTORY:-/tmp}/data.json"
+        - name: summarize (python)
+          interpreter: python
+          cmd: |
+            import json
+            import os
+
+            path = os.path.join(os.environ.get("FLOW_TMP_DIRECTORY", "/tmp"), "data.json")
+            with open(path, encoding="utf-8") as handle:
+                data = json.load(handle)
+            print("summary:", data)
+
+  - verb: run
+    name: in-container
+    description: |
+      Combine `interpreter: python` with `container` for a pinned interpreter
+      that does not depend on what is installed locally. The image's own python
+      is used - a host virtualenv is deliberately not carried in, so install
+      dependencies in the image or mount them with `volumes`.
+    exec:
+      interpreter: python
+      cmd: |
+        import sys
+
+        print("python", sys.version.split()[0], "from the image")
+      container:
+        image: python:3.13-alpine

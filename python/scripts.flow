@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://flowexec.io/schemas/flowfile_schema.json
+namespace: py-scripts
+description: |
+  Turning existing `.py` files into named executables with `imports`, rather
+  than wrapping each one in a flow file by hand.
+
+  Python uses `#` line comments, the same prefix shell scripts use, so the
+  `f:` metadata syntax is identical - see assets/scripts/report.py. Imported
+  executables are tagged `generated` and run like any other.
+tags:
+  - python
+  - imports
+imports:
+  - ../assets/scripts/report.py

@@ -6,6 +6,8 @@ tags:
   - node
   - git
   - docker
+  - container
+  - python
   - k8s
   - api
   - setup
